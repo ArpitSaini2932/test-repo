@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EEG Connection Simulator</title>
+<style>
+  body { margin: 0; background: #f0f0f0; font-family: sans-serif; }
+  .point, .ampPoint, .cspPoint {
+    width: 20px; height: 20px; background: red; border-radius: 50%; position: absolute; cursor: pointer;
+  }
+  .cspPoint { background: green; }
+  .ampPoint { background: blue; }
+  #eegCanvas { background: white; border: 1px solid #ccc; position: absolute; top: 350px; left: 50px; }
+  svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<!-- EEG Electrode Points -->
+<div id="electrode1" class="point" style="top: 100px; left: 100px;"></div> <!-- CSP Electrode -->
+<div id="electrode2" class="point" style="top: 100px; left: 200px;"></div>
+<div id="electrode3" class="point" style="top: 100px; left: 300px;"></div>
+
+<!-- CSP and Amplifier Input Points -->
+<div id="csp" class="cspPoint" style="top: 250px; left: 100px;"></div>
+<div id="amp1" class="ampPoint" style="top: 250px; left: 200px;"></div>
+<div id="amp2" class="ampPoint" style="top: 250px; left: 300px;"></div>
+
+<svg id="wireCanvas"></svg>
+
+<canvas id="eegCanvas" width="400" height="150"></canvas>
+
+<script>
+let connections = { csp: false, amp: 0 };
+let selected = null;
+
+// Function to get center of a point
+function getCenter(el) {
+  const rect = el.getBoundingClientRect();
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+// Function to draw wire
+function drawWire(from, to, color) {
+  const svg = document.getElementById('wireCanvas');
+  const p1 = getCenter(from);
+  const p2 = getCenter(to);
+  
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", p1.x);
+  line.setAttribute("y1", p1.y);
+  line.setAttribute("x2", p2.x);
+  line.setAttribute("y2", p2.y);
+  line.setAttribute("stroke", color);
+  line.setAttribute("stroke-width", "3");
+  svg.appendChild(line);
+}
+
+// Click logic
+document.querySelectorAll('.point').forEach(point => {
+  point.addEventListener('click', () => {
+    selected = point.id;
+    alert('Selected ' + selected + '. Now click CSP or Amplifier input to connect.');
+  });
+});
+
+document.getElementById('csp').addEventListener('click', () => {
+  if (selected === 'electrode1' && !connections.csp) {
+    drawWire(document.getElementById(selected), document.getElementById('csp'), 'green');
+    connections.csp = true;
+    selected = null;
+    checkStart();
+  }
+});
+
+document.querySelectorAll('.ampPoint').forEach(amp => {
+  amp.addEventListener('click', () => {
+    if ((selected === 'electrode2' || selected === 'electrode3') && connections.amp < 2) {
+      drawWire(document.getElementById(selected), amp, 'blue');
+      connections.amp++;
+      selected = null;
+      checkStart();
+    }
+  });
+});
+
+// EEG Graph Logic
+let eegRunning = false;
+function checkStart() {
+  if (connections.csp && connections.amp === 2 && !eegRunning) {
+    startEEG();
+  }
+}
+
+function startEEG() {
+  eegRunning = true;
+  const canvas = document.getElementById('eegCanvas');
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  let data = [];
+  let angle = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.beginPath();
+    ctx.strokeStyle = 'purple';
+    const mid = height / 2;
+    
+    for (let i = 0; i < data.length - 1; i++) {
+      ctx.moveTo(i, mid - data[i]);
+      ctx.lineTo(i + 1, mid - data[i + 1]);
+    }
+    
+    ctx.stroke();
+  }
+
+  function update() {
+    let sample = Math.sin(angle) * 10 + Math.random() * 4 - 2;
+    data.push(sample);
+    if (data.length > width) data.shift();
+    angle += 0.05;
+    draw();
+    requestAnimationFrame(update);
+  }
+
+  update();
+}
+</script>
+
+</body>
+</html>
