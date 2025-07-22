@@ -12,9 +12,203 @@
   .ampPoint { background: blue; }
   #eegCanvas { background: white; border: 1px solid #ccc; position: absolute; top: 350px; left: 50px; }
   svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+  
+  /* Patient Photo Module */
+  .patient-module {
+    position: absolute;
+    top: 20px;
+    right: 50px;
+    width: 200px;
+    height: 280px;
+    background: white;
+    border: 2px solid #333;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    padding: 15px;
+    text-align: center;
+  }
+  
+  .patient-photo {
+    width: 170px;
+    height: 200px;
+    background: #e8e8e8;
+    border: 1px solid #ccc;
+    margin: 0 auto 10px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 5px;
+  }
+  
+  .patient-figure {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%);
+    position: relative;
+  }
+  
+  .eeg-cap {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 30px;
+    background: #444;
+    border-radius: 20px 20px 5px 5px;
+    border: 2px solid #333;
+  }
+  
+  .electrode-dots {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 35px;
+    height: 25px;
+  }
+  
+  .electrode-dot {
+    width: 4px;
+    height: 4px;
+    background: #0f0;
+    border-radius: 50%;
+    position: absolute;
+  }
+  
+  .patient-info {
+    font-size: 12px;
+    color: #333;
+    margin-top: 5px;
+  }
+  
+  /* Amplifier Photo Module */
+  .amplifier-module {
+    position: absolute;
+    top: 20px;
+    right: 270px;
+    width: 180px;
+    height: 140px;
+    background: white;
+    border: 2px solid #333;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    padding: 15px;
+    text-align: center;
+  }
+  
+  .amplifier-photo {
+    width: 150px;
+    height: 80px;
+    background: #2c3e50;
+    border: 1px solid #34495e;
+    margin: 0 auto 10px;
+    position: relative;
+    border-radius: 5px;
+  }
+  
+  .amp-display {
+    width: 40px;
+    height: 20px;
+    background: #1abc9c;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+  }
+  
+  .amp-knobs {
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    right: 10px;
+  }
+  
+  .amp-knob {
+    width: 15px;
+    height: 15px;
+    background: #7f8c8d;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 5px;
+    border: 2px solid #95a5a6;
+  }
+  
+  .amp-ports {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+  }
+  
+  .amp-port {
+    width: 8px;
+    height: 8px;
+    background: #e74c3c;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 2px;
+  }
+  
+  .amplifier-info {
+    font-size: 12px;
+    color: #333;
+    margin-top: 5px;
+  }
 </style>
 </head>
 <body>
+
+<!-- Patient Photo Module -->
+<div class="patient-module">
+  <div class="patient-photo">
+    <div class="patient-figure">
+      <div class="eeg-cap">
+        <div class="electrode-dots">
+          <div class="electrode-dot" style="top: 2px; left: 8px;"></div>
+          <div class="electrode-dot" style="top: 2px; left: 15px;"></div>
+          <div class="electrode-dot" style="top: 2px; left: 22px;"></div>
+          <div class="electrode-dot" style="top: 8px; left: 5px;"></div>
+          <div class="electrode-dot" style="top: 8px; left: 12px;"></div>
+          <div class="electrode-dot" style="top: 8px; left: 19px;"></div>
+          <div class="electrode-dot" style="top: 8px; left: 26px;"></div>
+          <div class="electrode-dot" style="top: 14px; left: 8px;"></div>
+          <div class="electrode-dot" style="top: 14px; left: 15px;"></div>
+          <div class="electrode-dot" style="top: 14px; left: 22px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="patient-info">
+    <strong>Patient Model</strong><br>
+    EEG Cap Connected
+  </div>
+</div>
+
+<!-- Amplifier Photo Module -->
+<div class="amplifier-module">
+  <div class="amplifier-photo">
+    <div class="amp-display">EEG</div>
+    <div class="amp-knobs">
+      <div class="amp-knob"></div>
+      <div class="amp-knob"></div>
+      <div class="amp-knob"></div>
+      <div class="amp-knob"></div>
+    </div>
+    <div class="amp-ports">
+      <div class="amp-port"></div>
+      <div class="amp-port"></div>
+      <div class="amp-port"></div>
+    </div>
+  </div>
+  <div class="amplifier-info">
+    <strong>EEG Amplifier</strong><br>
+    Signal Processing Unit
+  </div>
+</div>
 
 <!-- EEG Electrode Points -->
 <div id="electrode1" class="point" style="top: 100px; left: 100px;"></div> <!-- CSP Electrode -->
