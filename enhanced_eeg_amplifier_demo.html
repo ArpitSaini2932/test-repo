@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professional EEG Amplifier Connection Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body { 
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+    overflow-x: hidden;
+  }
+  
+  .main-container {
+    display: grid;
+    grid-template-columns: 300px 1fr 300px;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .header {
+    grid-column: 1 / -1;
+    text-align: center;
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  .status-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ff4444;
+    margin-left: 10px;
+    animation: pulse 2s infinite;
+  }
+  
+  .status-indicator.connected {
+    background: #44ff44;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+  
+  /* Left Panel - Patient and Electrode Setup */
+  .patient-panel {
+    background: rgba(255,255,255,0.15);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  
+  .patient-3d-model {
+    width: 100%;
+    height: 300px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    position: relative;
+    margin-bottom: 20px;
+    perspective: 1000px;
+  }
+  
+  .head-model {
+    width: 150px;
+    height: 200px;
+    background: linear-gradient(145deg, #f0c0a0, #e0a080);
+    border-radius: 50% 50% 45% 45%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotateX(-10deg);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  
+  .electrode {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #ff6b35;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(255,107,53,0.5);
+  }
+  
+  .electrode:hover {
+    transform: scale(1.5);
+    box-shadow: 0 0 20px rgba(255,107,53,0.8);
+  }
+  
+  .electrode.connected {
+    background: #44ff44;
+    box-shadow: 0 0 15px rgba(68,255,68,0.8);
+  }
+  
+  .electrode-labels {
+    margin-top: 20px;
+  }
+  
+  .electrode-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: rgba(255,255,255,0.1);
+    margin: 5px 0;
+    border-radius: 5px;
+  }
+  
+  /* Center Panel - Visualization */
+  .visualization-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .graph-container {
+    background: rgba(255,255,255,0.95);
+    border-radius: 15px;
+    padding: 20px;
+    height: 300px;
+    position: relative;
+  }
+  
+  .frequency-analysis {
+    background: rgba(255,255,255,0.95);
+    border-radius: 15px;
+    padding: 20px;
+    height: 250px;
+    position: relative;
+  }
+  
+  #eegCanvas, #frequencyCanvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+  }
+  
+  .canvas-label {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    color: #333;
+    font-weight: bold;
+    font-size: 18px;
+  }
+  
+  /* Right Panel - Amplifier and Controls */
+  .amplifier-panel {
+    background: rgba(255,255,255,0.15);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  
+  .amplifier-3d {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(145deg, #2c3e50, #34495e);
+    border-radius: 10px;
+    position: relative;
+    margin-bottom: 20px;
+    transform: perspective(500px) rotateY(-15deg);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+  }
+  
+  .amp-display {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 80px;
+    height: 40px;
+    background: #1abc9c;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 14px;
+  }
+  
+  .amp-ports {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .amp-port {
+    width: 15px;
+    height: 15px;
+    background: #e74c3c;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .amp-port:hover {
+    background: #c0392b;
+    transform: scale(1.2);
+  }
+  
+  .amp-port.connected {
+    background: #27ae60;
+    box-shadow: 0 0 10px rgba(39,174,96,0.6);
+  }
+  
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .control-group {
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 10px;
+  }
+  
+  .control-group h3 {
+    margin-bottom: 10px;
+    color: #ecf0f1;
+  }
+  
+  .slider {
+    width: 100%;
+    margin: 10px 0;
+  }
+  
+  input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.3);
+    outline: none;
+  }
+  
+  .connection-matrix {
+    margin-top: 20px;
+  }
+  
+  .matrix-row {
+    display: flex;
+    gap: 5px;
+    margin: 5px 0;
+  }
+  
+  .matrix-cell {
+    width: 20px;
+    height: 20px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+  }
+  
+  .matrix-cell.connected {
+    background: #27ae60;
+    box-shadow: 0 0 5px rgba(39,174,96,0.6);
+  }
+  
+  /* Wire Visualization */
+  .wire-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  .wire {
+    stroke-width: 3;
+    fill: none;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 3px rgba(0,0,0,0.3));
+  }
+  
+  .footer {
+    grid-column: 1 / -1;
+    text-align: center;
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 1200px) {
+    .main-container {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto auto;
+    }
+    
+    .patient-panel, .amplifier-panel {
+      order: 1;
+    }
+    
+    .visualization-panel {
+      order: 2;
+    }
+  }
+  
+  /* Connection Animation */
+  @keyframes connectionFlow {
+    0% { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 0; }
+  }
+  
+  .wire.active {
+    stroke-dasharray: 5, 5;
+    animation: connectionFlow 1s linear infinite;
+  }
+</style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Professional EEG Amplifier Demo</h1>
+      <p>Real-time Frequency Analysis & 3D Connection Visualization</p>
+      <span class="status-indicator" id="systemStatus"></span>
+    </div>
+    
+    <!-- Patient Panel -->
+    <div class="patient-panel">
+      <h2>Patient Model & Electrodes</h2>
+      <div class="patient-3d-model">
+        <div class="head-model">
+          <!-- EEG Electrodes positioned on the head -->
+          <div class="electrode" id="fp1" style="top: 15%; left: 25%;" data-label="Fp1"></div>
+          <div class="electrode" id="fp2" style="top: 15%; right: 25%;" data-label="Fp2"></div>
+          <div class="electrode" id="f3" style="top: 30%; left: 15%;" data-label="F3"></div>
+          <div class="electrode" id="f4" style="top: 30%; right: 15%;" data-label="F4"></div>
+          <div class="electrode" id="c3" style="top: 45%; left: 10%;" data-label="C3"></div>
+          <div class="electrode" id="c4" style="top: 45%; right: 10%;" data-label="C4"></div>
+          <div class="electrode" id="p3" style="top: 65%; left: 15%;" data-label="P3"></div>
+          <div class="electrode" id="p4" style="top: 65%; right: 15%;" data-label="P4"></div>
+          <div class="electrode" id="o1" style="top: 80%; left: 25%;" data-label="O1"></div>
+          <div class="electrode" id="o2" style="top: 80%; right: 25%;" data-label="O2"></div>
+        </div>
+      </div>
+      
+      <div class="electrode-labels">
+        <h3>Electrode Status</h3>
+        <div id="electrodeList"></div>
+      </div>
+    </div>
+    
+    <!-- Visualization Panel -->
+    <div class="visualization-panel">
+      <div class="graph-container">
+        <div class="canvas-label">Real-time EEG Signal</div>
+        <canvas id="eegCanvas"></canvas>
+      </div>
+      
+      <div class="frequency-analysis">
+        <div class="canvas-label">Frequency Spectrum Analysis</div>
+        <canvas id="frequencyCanvas"></canvas>
+      </div>
+    </div>
+    
+    <!-- Amplifier Panel -->
+    <div class="amplifier-panel">
+      <h2>EEG Amplifier</h2>
+      <div class="amplifier-3d">
+        <div class="amp-display" id="ampDisplay">READY</div>
+        <div class="amp-ports">
+          <div class="amp-port" id="port1" data-channel="1"></div>
+          <div class="amp-port" id="port2" data-channel="2"></div>
+          <div class="amp-port" id="port3" data-channel="3"></div>
+          <div class="amp-port" id="port4" data-channel="4"></div>
+          <div class="amp-port" id="port5" data-channel="5"></div>
+        </div>
+      </div>
+      
+      <div class="controls">
+        <div class="control-group">
+          <h3>Signal Processing</h3>
+          <label>Gain: <span id="gainValue">1000</span>x</label>
+          <input type="range" id="gainSlider" min="100" max="10000" value="1000" class="slider">
+          
+          <label>High-pass Filter: <span id="hpValue">0.5</span> Hz</label>
+          <input type="range" id="hpSlider" min="0.1" max="5" step="0.1" value="0.5" class="slider">
+          
+          <label>Low-pass Filter: <span id="lpValue">100</span> Hz</label>
+          <input type="range" id="lpSlider" min="30" max="200" value="100" class="slider">
+        </div>
+        
+        <div class="control-group">
+          <h3>Connection Matrix</h3>
+          <div class="connection-matrix" id="connectionMatrix"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+      <p>Click electrodes to select, then click amplifier ports to connect. All connections must be made to start recording.</p>
+    </div>
+  </div>
+  
+  <!-- Wire Visualization SVG -->
+  <svg class="wire-container" id="wireCanvas">
+    <defs>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feMerge> 
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
+
+<script>
+class EEGAmplifierDemo {
+  constructor() {
+    this.selectedElectrode = null;
+    this.connections = {};
+    this.isRecording = false;
+    this.signalData = [];
+    this.frequencyData = [];
+    this.settings = {
+      gain: 1000,
+      highpass: 0.5,
+      lowpass: 100,
+      sampleRate: 250
+    };
+    
+    this.electrodes = ['fp1', 'fp2', 'f3', 'f4', 'c3', 'c4', 'p3', 'p4', 'o1', 'o2'];
+    this.ports = ['port1', 'port2', 'port3', 'port4', 'port5'];
+    
+    this.init();
+  }
+  
+  init() {
+    this.setupEventListeners();
+    this.initCanvases();
+    this.updateElectrodeList();
+    this.updateConnectionMatrix();
+    this.updateDisplay();
+  }
+  
+  setupEventListeners() {
+    // Electrode selection
+    this.electrodes.forEach(id => {
+      const electrode = document.getElementById(id);
+      electrode.addEventListener('click', () => this.selectElectrode(id));
+    });
+    
+    // Port connection
+    this.ports.forEach(id => {
+      const port = document.getElementById(id);
+      port.addEventListener('click', () => this.connectToPort(id));
+    });
+    
+    // Control sliders
+    document.getElementById('gainSlider').addEventListener('input', (e) => {
+      this.settings.gain = parseInt(e.target.value);
+      document.getElementById('gainValue').textContent = this.settings.gain;
+    });
+    
+    document.getElementById('hpSlider').addEventListener('input', (e) => {
+      this.settings.highpass = parseFloat(e.target.value);
+      document.getElementById('hpValue').textContent = this.settings.highpass;
+    });
+    
+    document.getElementById('lpSlider').addEventListener('input', (e) => {
+      this.settings.lowpass = parseInt(e.target.value);
+      document.getElementById('lpValue').textContent = this.settings.lowpass;
+    });
+  }
+  
+  selectElectrode(electrodeId) {
+    // Clear previous selection
+    if (this.selectedElectrode) {
+      document.getElementById(this.selectedElectrode).style.border = '';
+    }
+    
+    this.selectedElectrode = electrodeId;
+    document.getElementById(electrodeId).style.border = '3px solid yellow';
+    
+    this.showMessage(`Selected electrode ${electrodeId.toUpperCase()}. Now click an amplifier port to connect.`);
+  }
+  
+  connectToPort(portId) {
+    if (!this.selectedElectrode) {
+      this.showMessage('Please select an electrode first.');
+      return;
+    }
+    
+    // Check if port is already connected
+    if (this.connections[portId]) {
+      this.showMessage(`Port ${portId} is already connected.`);
+      return;
+    }
+    
+    // Make connection
+    this.connections[portId] = this.selectedElectrode;
+    
+    // Update visuals
+    document.getElementById(this.selectedElectrode).classList.add('connected');
+    document.getElementById(portId).classList.add('connected');
+    document.getElementById(this.selectedElectrode).style.border = '';
+    
+    // Draw wire
+    this.drawWire(this.selectedElectrode, portId);
+    
+    this.selectedElectrode = null;
+    this.updateConnectionMatrix();
+    this.updateElectrodeList();
+    
+    // Check if ready to start recording
+    if (Object.keys(this.connections).length >= 3 && !this.isRecording) {
+      this.startRecording();
+    }
+    
+    this.showMessage(`Connected ${this.connections[portId].toUpperCase()} to ${portId}`);
+  }
+  
+  drawWire(electrodeId, portId) {
+    const electrode = document.getElementById(electrodeId);
+    const port = document.getElementById(portId);
+    const svg = document.getElementById('wireCanvas');
+    
+    const electrodeRect = electrode.getBoundingClientRect();
+    const portRect = port.getBoundingClientRect();
+    
+    const wire = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    
+    const startX = electrodeRect.left + electrodeRect.width / 2;
+    const startY = electrodeRect.top + electrodeRect.height / 2;
+    const endX = portRect.left + portRect.width / 2;
+    const endY = portRect.top + portRect.height / 2;
+    
+    // Create curved path for more realistic wire appearance
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2 + 50; // Add curve
+    
+    const path = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
+    
+    wire.setAttribute('d', path);
+    wire.setAttribute('class', 'wire active');
+    wire.setAttribute('stroke', '#27ae60');
+    wire.setAttribute('filter', 'url(#glow)');
+    wire.setAttribute('id', `wire-${electrodeId}-${portId}`);
+    
+    svg.appendChild(wire);
+  }
+  
+  initCanvases() {
+    this.eegCanvas = document.getElementById('eegCanvas');
+    this.eegCtx = this.eegCanvas.getContext('2d');
+    this.freqCanvas = document.getElementById('frequencyCanvas');
+    this.freqCtx = this.freqCanvas.getContext('2d');
+    
+    // Set canvas sizes
+    this.resizeCanvases();
+    window.addEventListener('resize', () => this.resizeCanvases());
+  }
+  
+  resizeCanvases() {
+    const eegContainer = this.eegCanvas.parentElement;
+    const freqContainer = this.freqCanvas.parentElement;
+    
+    this.eegCanvas.width = eegContainer.clientWidth - 40;
+    this.eegCanvas.height = eegContainer.clientHeight - 60;
+    
+    this.freqCanvas.width = freqContainer.clientWidth - 40;
+    this.freqCanvas.height = freqContainer.clientHeight - 60;
+  }
+  
+  startRecording() {
+    this.isRecording = true;
+    document.getElementById('systemStatus').classList.add('connected');
+    document.getElementById('ampDisplay').textContent = 'REC';
+    
+    this.showMessage('Recording started! Real-time EEG signal analysis active.');
+    
+    // Initialize signal arrays for each connected channel
+    this.signalData = {};
+    Object.values(this.connections).forEach(electrode => {
+      this.signalData[electrode] = [];
+    });
+    
+    this.animate();
+  }
+  
+  animate() {
+    if (!this.isRecording) return;
+    
+    this.generateSignalData();
+    this.drawEEGSignals();
+    this.drawFrequencySpectrum();
+    
+    requestAnimationFrame(() => this.animate());
+  }
+  
+  generateSignalData() {
+    const time = Date.now() / 1000;
+    
+    Object.keys(this.signalData).forEach(electrode => {
+      // Generate realistic EEG-like signals with different frequency components
+      let signal = 0;
+      
+      // Alpha waves (8-13 Hz) - dominant in relaxed state
+      signal += Math.sin(2 * Math.PI * 10 * time) * 50;
+      
+      // Beta waves (14-30 Hz) - mental activity
+      signal += Math.sin(2 * Math.PI * 20 * time) * 20;
+      
+      // Theta waves (4-7 Hz) - drowsiness
+      signal += Math.sin(2 * Math.PI * 6 * time) * 30;
+      
+      // Add noise and artifacts
+      signal += (Math.random() - 0.5) * 15;
+      
+      // Add electrode-specific variations
+      const electrodeMultiplier = this.getElectrodeMultiplier(electrode);
+      signal *= electrodeMultiplier;
+      
+      // Apply gain
+      signal *= (this.settings.gain / 1000);
+      
+      // Store signal
+      this.signalData[electrode].push(signal);
+      
+      // Keep only recent data (last 5 seconds)
+      const maxSamples = this.settings.sampleRate * 5;
+      if (this.signalData[electrode].length > maxSamples) {
+        this.signalData[electrode].shift();
+      }
+    });
+  }
+  
+  getElectrodeMultiplier(electrode) {
+    // Different electrodes have different typical amplitudes
+    const multipliers = {
+      'fp1': 0.8, 'fp2': 0.8,  // Frontal
+      'f3': 1.0, 'f4': 1.0,    // Frontal
+      'c3': 1.2, 'c4': 1.2,    // Central (motor cortex)
+      'p3': 0.9, 'p4': 0.9,    // Parietal
+      'o1': 1.1, 'o2': 1.1     // Occipital (visual cortex)
+    };
+    return multipliers[electrode] || 1.0;
+  }
+  
+  drawEEGSignals() {
+    const ctx = this.eegCtx;
+    const width = this.eegCanvas.width;
+    const height = this.eegCanvas.height;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw grid
+    this.drawGrid(ctx, width, height);
+    
+    const channels = Object.keys(this.signalData);
+    const channelHeight = height / (channels.length + 1);
+    
+    channels.forEach((electrode, index) => {
+      const data = this.signalData[electrode];
+      if (data.length < 2) return;
+      
+      const y0 = channelHeight * (index + 1);
+      const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
+      const color = colors[index % colors.length];
+      
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      for (let i = 0; i < data.length - 1; i++) {
+        const x1 = (i / data.length) * width;
+        const x2 = ((i + 1) / data.length) * width;
+        const y1 = y0 - data[i];
+        const y2 = y0 - data[i + 1];
+        
+        if (i === 0) ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+      }
+      
+      ctx.stroke();
+      
+      // Draw electrode label
+      ctx.fillStyle = color;
+      ctx.font = '14px Arial';
+      ctx.fillText(electrode.toUpperCase(), 10, y0 - 30);
+    });
+  }
+  
+  drawFrequencySpectrum() {
+    const ctx = this.freqCtx;
+    const width = this.freqCanvas.width;
+    const height = this.freqCanvas.height;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw frequency spectrum for the first connected electrode
+    const electrodes = Object.keys(this.signalData);
+    if (electrodes.length === 0) return;
+    
+    const data = this.signalData[electrodes[0]];
+    if (data.length < 64) return;
+    
+    // Simple FFT approximation (for demo purposes)
+    const spectrum = this.computeSpectrum(data.slice(-64));
+    
+    // Draw spectrum
+    const barWidth = width / spectrum.length;
+    
+    spectrum.forEach((magnitude, index) => {
+      const frequency = (index * this.settings.sampleRate) / (2 * spectrum.length);
+      const barHeight = (magnitude / 100) * height * 0.8;
+      
+      // Color code by frequency band
+      let color;
+      if (frequency < 4) color = '#e74c3c';      // Delta
+      else if (frequency < 8) color = '#f39c12'; // Theta
+      else if (frequency < 13) color = '#2ecc71'; // Alpha
+      else if (frequency < 30) color = '#3498db'; // Beta
+      else color = '#9b59b6';                     // Gamma
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(index * barWidth, height - barHeight, barWidth - 1, barHeight);
+    });
+    
+    // Draw frequency labels
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.fillText('0 Hz', 5, height - 5);
+    ctx.fillText('30 Hz', width - 40, height - 5);
+    ctx.fillText('Frequency Spectrum', width / 2 - 60, 20);
+  }
+  
+  computeSpectrum(data) {
+    // Simplified spectrum computation for demo
+    const spectrum = [];
+    const windowSize = 8;
+    
+    for (let i = 0; i < data.length - windowSize; i += 2) {
+      let magnitude = 0;
+      for (let j = 0; j < windowSize; j++) {
+        magnitude += Math.abs(data[i + j]);
+      }
+      spectrum.push(magnitude / windowSize);
+    }
+    
+    return spectrum;
+  }
+  
+  drawGrid(ctx, width, height) {
+    ctx.strokeStyle = '#f0f0f0';
+    ctx.lineWidth = 1;
+    
+    // Vertical lines (time)
+    for (let x = 0; x <= width; x += 50) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    
+    // Horizontal lines (amplitude)
+    for (let y = 0; y <= height; y += 30) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+  }
+  
+  updateElectrodeList() {
+    const list = document.getElementById('electrodeList');
+    list.innerHTML = '';
+    
+    this.electrodes.forEach(id => {
+      const item = document.createElement('div');
+      item.className = 'electrode-item';
+      
+      const isConnected = Object.values(this.connections).includes(id);
+      const status = isConnected ? '✓ Connected' : '○ Available';
+      const statusColor = isConnected ? '#27ae60' : '#95a5a6';
+      
+      item.innerHTML = `
+        <span>${id.toUpperCase()}</span>
+        <span style="color: ${statusColor}">${status}</span>
+      `;
+      
+      list.appendChild(item);
+    });
+  }
+  
+  updateConnectionMatrix() {
+    const matrix = document.getElementById('connectionMatrix');
+    matrix.innerHTML = '';
+    
+    this.electrodes.forEach(electrode => {
+      const row = document.createElement('div');
+      row.className = 'matrix-row';
+      
+      this.ports.forEach(port => {
+        const cell = document.createElement('div');
+        cell.className = 'matrix-cell';
+        
+        if (this.connections[port] === electrode) {
+          cell.classList.add('connected');
+        }
+        
+        row.appendChild(cell);
+      });
+      
+      matrix.appendChild(row);
+    });
+  }
+  
+  updateDisplay() {
+    setInterval(() => {
+      if (this.isRecording) {
+        const connectedCount = Object.keys(this.connections).length;
+        document.getElementById('ampDisplay').textContent = `CH${connectedCount}`;
+      }
+    }, 1000);
+  }
+  
+  showMessage(message) {
+    // Create temporary message overlay
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 1000;
+      font-size: 16px;
+      text-align: center;
+    `;
+    messageDiv.textContent = message;
+    
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => {
+      document.body.removeChild(messageDiv);
+    }, 3000);
+  }
+}
+
+// Initialize the demo when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  new EEGAmplifierDemo();
+});
+</script>
+
+</body>
+</html>
